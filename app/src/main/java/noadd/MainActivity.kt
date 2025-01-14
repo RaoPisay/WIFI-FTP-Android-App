@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,14 +16,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.launch
 import noadd.ui.theme.FTPAppTheme
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -52,13 +59,61 @@ class MainActivity : ComponentActivity() {
         setContent {
             FTPAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    FTPServerScreen(modifier = Modifier.padding(innerPadding))
+                    MainScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MainScreen(modifier: Modifier = Modifier) {
+    val pagerState = rememberPagerState(initialPage = 0,
+        initialPageOffsetFraction = 0.0F,
+        pageCount = { 2 })//remember { PagerStateImpl(currentPage = 0, currentPageOffsetFraction = 0.0F, ) }  // Stable PagerState
+    val coroutineScope = rememberCoroutineScope()
+
+    Column {
+        // Tab Layout
+        TabRow(selectedTabIndex = pagerState.currentPage) {
+            Tab(selected = pagerState.currentPage == 0,
+                onClick = { coroutineScope.launch { pagerState.scrollToPage(0) } }) {
+                Text("Connection Details", modifier = Modifier.padding(16.dp))
+            }
+            Tab(selected = pagerState.currentPage == 1,
+                onClick = { coroutineScope.launch { pagerState.scrollToPage(1) } }) {
+                Text("About", modifier = Modifier.padding(16.dp))
+            }
+        }
+
+        // ViewPager (Stable HorizontalPager)
+        HorizontalPager(state = pagerState) { page ->
+            when (page) {
+                0 -> FTPServerScreen(modifier)//ConnectionDetailsScreen()
+                1 -> AboutScreen(modifier)
+            }
+        }
+    }
+}
+
+
+// Tab 2 - About
+@Composable
+fun AboutScreen(modifier: Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        BorderBox(label = "NoAdd", value = "1. A simple FTP server App created out of frustration, similar apps are bombarding with lot of adds.\n2. Whole code can be found https://github.com/RaoPisay/WIFI-FTP-Android-App/tree/master.\n3. Contributors welcome")
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+//Tab 1 - Connection Details
 @Composable
 fun FTPServerScreen(modifier: Modifier = Modifier) {
     var ipAddress by remember { mutableStateOf("Fetching...") }
@@ -108,10 +163,10 @@ private fun BorderBox(label: String, value: String) {
     }
 }
 
-@Preview(showBackground = true)
+@Preview
 @Composable
-fun PreviewFTPServerScreen() {
-    FTPServerScreen()
+fun preview() {
+    MainScreen()
 }
 
 // Function to get the local IP address
